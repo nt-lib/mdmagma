@@ -128,13 +128,6 @@ intrinsic DiamondOperator(X::MDCrvMod, d::RngIntElt, D::DivCrvElt) -> DivCrvElt
     return &+dD;
 end intrinsic;
 
-intrinsic DiamondOperator(X::MDCrvMod, d::RngIntElt, x::PlcCrvElt) -> PlcCrvElt
-{ Return the result of applying the diamond operator <d> on x as a place on X }
-    E := EllipticCurve(X, x);
-    L := LevelStructure(X, x);
-    return ModuliPoint(X, E, DiamondOperator(X, d, L));
-end intrinsic;
-
 intrinsic DiamondOrbit(X::MDCrvMod, x::PlcCrvElt) -> SeqEnum[PlcCrvElt]
 { Return the orbit of x under the diamond operators }
     E := EllipticCurve(X, x);
@@ -142,13 +135,6 @@ intrinsic DiamondOrbit(X::MDCrvMod, x::PlcCrvElt) -> SeqEnum[PlcCrvElt]
     N := Level(X);
     diamonds := [i : i in [1..(N div 2)] | GCD(i,N) eq 1];
     return [ModuliPoint(X, E, DiamondOperator(X, d, L)) : d in diamonds];
-end intrinsic;
-
-intrinsic DiamondOperator(X::MDCrvMod, d::RngIntElt, D::DivCrvElt) -> DivCrvElt
-{ Return the result of applying the diamond operator <d> on D as a divisor on X }
-    a,b := Support(D);
-    dD := [b[i]*DiamondOperator(X, d, a[i]) : i in [1..#a]];
-    return &+dD;
 end intrinsic;
 
 intrinsic PlacesUpToDiamond(X::MDCrvMod, S::SeqEnum[PlcCrvElt]) -> SeqEnum[PlcCrvElt]
