@@ -159,8 +159,12 @@ intrinsic _equation_X11(m,n,base_ring : equation_directory:="", zeta_m:=0) -> Cr
         else
             try
                 zeta_m := RootOfUnity(m,base_ring);
+		// Different fields in magma behave different, RootOfUnity raises an error if the base_ring 
+		// is QQ but creates a field extension if base_ring is a finite field. The following assert
+		// fixes this difference.
+		assert zeta_m in base_ring;
             catch e
-                message := Sprintf("The base ring: %o does not contain a primitive %oth root of unity", base_ring, m);
+                message := Sprintf("The base ring: %o \n doesn't seem to contain a primitive %oth root of unity. If it has one please provide it using the optional argument  zeta_m := ...", base_ring, m);
                 require false: message;
             end try;
         end if;

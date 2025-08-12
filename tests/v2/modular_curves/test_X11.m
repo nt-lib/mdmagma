@@ -7,6 +7,14 @@ procedure test_Print()
   );
 end procedure;
 
+procedure test_MDX11()
+  TSTAssertRaises(
+    MDX11,
+    "doesn't seem to contain a primitive ",
+    3, 15, GF(17)
+  );
+end procedure;
+
 procedure test_Level()
   TSTAssertEQ(Level(X), 20);
 end procedure;
@@ -82,6 +90,7 @@ procedure test_Cusps()
 end procedure;
 
 test_Print();
+test_MDX11();
 test_Level();
 test_Genus();
 test_LevelStructure();
