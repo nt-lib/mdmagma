@@ -1,3 +1,6 @@
 [submodule "Magma"]
 	path = Magma
 	url = https://github.com/AndrewVSutherland/Magma.git
+[submodule "tests/magma-unittest"]
+	path = tests/magma-unittest
+	url = git@github.com:nt-lib/magma-unittest.git

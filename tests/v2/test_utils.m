@@ -27,8 +27,8 @@ procedure test_MDMultiset()
   // of galois conjugate points over GF(4)
   TSTAssertEQ({Multiplicity(S,x) : x in S}, {1,2});
   S := Multiset([Places(P)[1] : P in CF4]);
-  // here we test the wrong behaviour of magma
-  TSTAssertEQ({Multiplicity(S,x) : x in S}, {1});
+  // magma correctly identifies conjugate points as the same place since V2.29-4
+  TSTAssertEQ({Multiplicity(S,x) : x in S}, {1,2});
 end procedure;
 
 procedure test_MDValues()

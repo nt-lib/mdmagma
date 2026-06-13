@@ -3,6 +3,20 @@ mdmagma
 
 Magma code for computing with modular curves by Maarten Derickx and Andrew V. Sutherland.
 
+# Installation
+
+Clone the repository with submodules initialised:
+
+```shell
+git clone --recurse-submodules https://github.com/nt-lib/mdmagma.git
+```
+
+If you already cloned without `--recurse-submodules`, initialise them afterwards:
+
+```shell
+git submodule update --init
+```
+
 # Requirements
 
 This requires [Andrew V. Sutherlands magma package](https://github.com/AndrewVSutherland/Magma). It is known to work with the version [commit 6a5a68a8c5ba...](https://github.com/AndrewVSutherland/Magma/tree/6a5a68a8c5ba526b707f746d559c8f23cbe641b1), and should also work with later versions.
@@ -56,11 +70,36 @@ git submodule
 
 ## Testing
 
-To run the tests for this repository execute. At the momemnt it is only possible to run the tests from the tests folder. Running them from any other folder will result in an error.
+If you have Magma installed locally:
+
+```shell
+make test
+```
+
+If you do not have Magma installed locally but have SSH access to a machine that does,
+you can run the tests remotely. The makefile will rsync the repository to `/tmp/mdmagma`
+on the remote host and run the tests there:
+
+```shell
+make test_remote ssh=<hostname>
+```
+
+For manual invocation without make, note that the tests must be run from the `tests/`
+directory:
 
 ```shell
 cd tests
 magma -n v2/test_all.m
+```
+
+# Troubleshooting
+
+## "Can't open package spec file ... Magma/magma.spec"
+
+This error occurs during regular usage and tests. The `Magma/` directory is a git submodule that must be initialised:
+
+```shell
+git submodule update --init
 ```
 
 # Copyright

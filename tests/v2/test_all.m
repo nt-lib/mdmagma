@@ -1,5 +1,5 @@
 AttachSpec("../v2/mdmagma.spec");
-load "tst.m";
+load "magma-unittest/tst.m";
 load "v2/test_utils.m";
 load "v2/algebra/test_linear_algebra.m";
 load "v2/elliptic_curves/test_isogenies.m";
