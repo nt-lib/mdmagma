@@ -243,3 +243,140 @@ intrinsic CuspOrbitsQ(X::MDCrvMod1) -> SeqEnum[DivCrvElt]
     orbits := [&+c : c in MDValues(_CuspData(X))];
     return orbits;
 end intrinsic;
+
+intrinsic HeckeOperatorFast(X::MDCrvMod1, q::RngIntElt, x::PlcCrvElt) -> DivCrvElt
+{ Return T_q(x) as a divisor on X, for a non-cuspidal place x, using MDIsogeniesFast.
+
+  Same result as HeckeOperator, but each of the q+1 isogenies is computed over the field
+  of definition of its kernel rather than over the splitting field of the whole
+  q-division polynomial, and only one isogeny per Frobenius orbit is computed at all:
+  the conjugates of a subgroup give conjugate, hence equal, places of X, so one isogeny
+  per orbit contributes with multiplicity the size of that orbit.
+
+  Requires q to be an odd prime; for q = 2 use HeckeOperator.
+}
+    char := Characteristic(BaseRing(X));
+    require char gt 0 : "the base ring must be a finite field";
+    require IsPrime(q) and IsOdd(q) and GCD(char, q) eq 1 :
+        "q must be an odd prime different from the characteristic";
+    require GCD(Level(X), q) eq 1 : "q must be coprime to the level";
+    ZZ := Integers();
+    d := Degree(x);
+    E := EllipticCurve(X, x);
+    P := LevelStructure(X, x)`P;
+    Tqx := DivisorGroup(Curve(X)) ! 0;
+    for t in MDIsogeniesFast(E, q) do
+        phi, e, F1 := Explode(t);
+        EL := Domain(phi); L := BaseRing(EL);
+        // P is defined over the base field of E, which sits inside L only through F1
+        PL := EL ! [L ! (F1 ! c) : c in Eltseq(P)];
+        y := ModuliPoint(X, Codomain(phi), rec<X1LevelStructure | P := phi(PL)>);
+        Tqx +:= (ZZ ! (e*d/Degree(y))) * Divisor(y);
+    end for;
+    assert Degree(Tqx) eq (q+1)*d;
+    return Tqx;
+end intrinsic;
+
+intrinsic HeckeOperatorFast(X::MDCrvMod1, q::RngIntElt, D::DivCrvElt) -> DivCrvElt
+{ Return T_q(D) as a divisor on X, for a divisor D supported on non-cuspidal places }
+    a, b := Support(D);
+    return &+[b[i]*HeckeOperatorFast(X, q, a[i]) : i in [1..#a]];
+end intrinsic;
+
+intrinsic PlacesUpToDiamondFast(X::MDCrvMod1, S::SeqEnum[PlcCrvElt]) -> SeqEnum[PlcCrvElt]
+{ Return one representative of each orbit in S under the diamond operators, deciding
+  equivalence with isomorphism tests of elliptic curves instead of by computing the
+  orbit of every place.
+
+  PlacesUpToDiamond calls ModuliPoint once per diamond operator and per place, that is
+  once per function field point; this does no function field work beyond reading off
+  (E, P).  Reducing the 756 places of degree 5 of X_1(57) over GF(5) takes 11 seconds
+  this way, against an estimated 16 to 21 hours for PlacesUpToDiamond.
+
+  The criterion is that two non-cuspidal places x, x' of the same degree k, given by
+  (E, P) over K and (E', P') over K', satisfy x' = <a>x for some a coprime to the level
+  exactly when for some power sigma of the Frobenius of K there is an isomorphism
+  iota : (E')^sigma -> E over K with iota((P')^sigma) a generator of <P>.  Such an iota
+  is automatically defined over K: otherwise iota^F iota^-1 would be a non-trivial
+  automorphism of E fixing the K-rational point aP of order N >= 5, while for a
+  non-trivial automorphism zeta the kernel of zeta-1 has at most 4 geometric points.
+}
+    N := Level(X);
+    p := #PrimeField(BaseRing(X));
+    data := [* *];
+    for x in S do
+        E := EllipticCurve(X, x);
+        data[#data+1] := <E, LevelStructure(X, x)`P,
+                          MinimalPolynomial(jInvariant(E), PrimeField(BaseRing(X))),
+                          Degree(x)>;
+    end for;
+    // the diamond operators preserve both the j-invariant and the degree, so grouping by
+    // them cannot split an orbit
+    groups := AssociativeArray();
+    for i in [1..#S] do
+        key := <data[i][3], data[i][4]>;
+        if IsDefined(groups, key) then
+            Append(~groups[key], i);
+        else
+            groups[key] := [i];
+        end if;
+    end for;
+    representatives := [];
+    for key in Keys(groups) do
+        indices := groups[key];
+        done := [false : i in indices];
+        for a in [1..#indices] do
+            if done[a] then continue; end if;
+            done[a] := true;
+            Append(~representatives, S[indices[a]]);
+            E1 := data[indices[a]][1];
+            P1 := data[indices[a]][2];
+            K1 := BaseRing(E1);
+            k := Degree(K1);
+            generators := {@ c*P1 : c in [1..N-1] | GCD(c, N) eq 1 @};
+            for b in [a+1..#indices] do
+                if done[b] then continue; end if;
+                E2 := data[indices[b]][1];
+                P2 := data[indices[b]][2];
+                K2 := BaseRing(E2);
+                if K2 cmpeq K1 then
+                    ainvs := aInvariants(E2); coords := Eltseq(P2);
+                else
+                    // the two places have the same degree, so K2 and K1 are isomorphic
+                    ok := true;
+                    try
+                        ainvs := [K1 ! c : c in aInvariants(E2)];
+                        coords := [K1 ! c : c in Eltseq(P2)];
+                    catch err
+                        ok := false;
+                    end try;
+                    if not ok then
+                        Embed(K2, K1);
+                        ainvs := [K1 ! c : c in aInvariants(E2)];
+                        coords := [K1 ! c : c in Eltseq(P2)];
+                    end if;
+                end if;
+                found := false;
+                for i in [0..k-1] do
+                    power := p^i;
+                    E2i := EllipticCurve([c^power : c in ainvs]);
+                    P2i := E2i ! [c^power : c in coords];
+                    isomorphic, phi := IsIsomorphic(E2i, E1);
+                    if not isomorphic then continue; end if;
+                    for alpha in Automorphisms(E1) do
+                        if alpha(phi(P2i)) in generators then found := true; break; end if;
+                    end for;
+                    if found then break; end if;
+                end for;
+                if found then done[b] := true; end if;
+            end for;
+        end for;
+    end for;
+    return representatives;
+end intrinsic;
+
+intrinsic NoncuspidalPlacesUpToDiamondFast(X::MDCrvMod1, d::RngIntElt) -> SeqEnum[PlcCrvElt]
+{ Return the non-cuspidal places of degree d on X up to the diamond operators, using
+  PlacesUpToDiamondFast }
+    return PlacesUpToDiamondFast(X, NoncuspidalPlaces(X, d));
+end intrinsic;
