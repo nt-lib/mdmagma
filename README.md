@@ -29,6 +29,8 @@ The code in this project has been used for the following research papers:
 
 [Torsion subgroups of elliptic curves over quintic and sextic number fields](http://arxiv.org/abs/1608.07549)
 
+[Classification of torsion of elliptic curves over quintic fields](https://arxiv.org/abs/2609.12846)
+
 
 # Version 2
 

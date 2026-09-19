@@ -50,6 +50,40 @@ procedure test_DiamondOperatorPlcCrvElt()
    TSTAssertEQ(x, ddx);
 end procedure;
 
+procedure test_HeckeOperatorFast()
+   // X_1(17) over GF(3) has no non-cuspidal place of degree < 4
+   X := MDX1(17, GF(3));
+   x := NoncuspidalPlaces(X, 4)[1];
+   TSTAssertEQ(HeckeOperatorFast(X, 5, x), HeckeOperator(X, 5, x));
+   X := MDX1(13, GF(5));
+   x := NoncuspidalPlaces(X, 3)[1];
+   TSTAssertEQ(HeckeOperatorFast(X, 3, x), HeckeOperator(X, 3, x));
+   // the field of definition of the kernel is a subfield of an auxiliary field and is
+   // not registered as an extension of the residue field, so the level structure has to
+   // be coerced through that auxiliary field; this place is one where it matters
+   X := MDX1(26, GF(7));
+   x := NoncuspidalPlaces(X, 3)[11];
+   TSTAssertEQ(HeckeOperatorFast(X, 5, x), HeckeOperator(X, 5, x));
+end procedure;
+
+procedure test_PlacesUpToDiamondFast()
+   X := MDX1(13, GF(5));
+   S := NoncuspidalPlaces(X, 3);
+   representatives := PlacesUpToDiamondFast(X, S);
+   // the same number of orbits as PlacesUpToDiamond
+   TSTAssertEQ(#representatives, #PlacesUpToDiamond(X, S));
+   // the representatives are taken from S, and their orbits cover it
+   TSTAssertEQ({x : x in representatives} subset {x : x in S}, true);
+   covered := &join{{y : y in DiamondOrbit(X, x)} : x in representatives};
+   TSTAssertEQ({x : x in S} subset covered, true);
+end procedure;
+
+procedure test_NoncuspidalPlacesUpToDiamondFast()
+   X := MDX1(13, GF(5));
+   TSTAssertEQ(#NoncuspidalPlacesUpToDiamondFast(X, 3),
+               #NoncuspidalPlacesUpToDiamond(X, 3));
+end procedure;
+
 procedure test_CongruenceSubgroup()
    TSTAssertEQ(CongruenceSubgroup(X), Gamma1(21));
 end procedure;
@@ -108,6 +142,9 @@ test_HeckeOperatorPlcCrvElt();
 test_HeckeOperatorDivCrvElt();
 test_DiamondOperatorDivCrvElt();
 */
+test_HeckeOperatorFast();
+test_PlacesUpToDiamondFast();
+test_NoncuspidalPlacesUpToDiamondFast();
 test_CongruenceSubgroup();
 test_Cusps();
 test_CuspSignature();

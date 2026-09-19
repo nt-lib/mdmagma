@@ -55,5 +55,33 @@ procedure test_IsogeniesBugFix()
     end for;
 end procedure;
 
+procedure test_IsogeniesFast()
+    q := 5;
+    F := GF(11);
+    E := EllipticCurve([F ! 1, F ! 3]);
+    K := BaseRing(E);
+    isogenies := MDIsogeniesFast(E, q);
+    // one isogeny per Frobenius orbit, orbit sizes adding up to q+1
+    TSTAssertEQ(&+[t[2] : t in isogenies], q+1);   // orbit sizes add up to q+1
+    for t in isogenies do
+        phi, e, F1 := Explode(t);
+        TSTAssertEQ(Degree(phi), q);
+        TSTAssertEQ(jInvariant(Domain(phi)), jInvariant(E));
+        // phi is defined over the field of definition of its kernel, of degree e over K
+        TSTAssertEQ(Degree(BaseRing(Domain(phi))) div Degree(K), e);
+        // F1 contains both K and the field of definition
+        TSTAssertEQ(Degree(F1) mod Degree(BaseRing(Domain(phi))), 0);
+        TSTAssertEQ(Degree(F1) mod Degree(K), 0);
+    end for;
+end procedure;
+
+procedure test_IsogeniesFastRejectsTwo()
+    E := EllipticCurve([GF(11) ! 1, GF(11) ! 3]);
+    // a short fragment: magma wraps the error text, so a long one need not match
+    TSTAssertRaises(MDIsogeniesFast, "must be an odd prime", E, 2);
+end procedure;
+
 test_Isogenies();
+test_IsogeniesFast();
+test_IsogeniesFastRejectsTwo();
 // test_IsogeniesBugFix(); // todo run the test if magma is fixed
